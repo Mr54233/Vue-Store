@@ -78,7 +78,7 @@
 
 		<!-- 添加分类的对话框 -->
 		<el-dialog
-			title="添加份额里"
+			title="添加分类"
 			:visible.sync="addCateVisible"
 			width="50%"
 			@close="handleAddClose"
