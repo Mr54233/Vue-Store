@@ -7,8 +7,8 @@ import Right from "../components/power/right.vue";
 import Roles from "../components/power/role.vue";
 import GoodsList from "../components/goods/List.vue";
 import AddGoods from "../components/goods/AddGoods.vue";
-import Categories from "../components/goods/Categories.vue"
-import Params from "../components/goods/Params.vue"
+import Categories from "../components/goods/Categories.vue";
+import Params from "../components/goods/Params.vue";
 
 Vue.use(VueRouter);
 
@@ -19,6 +19,7 @@ const routes = [
 		path: "/home",
 		component: Home,
 		children: [
+			{ path: "/", redirect: "/users" },
 			{ path: "/users", component: Users },
 			{ path: "/rights", component: Right },
 			{ path: "/roles", component: Roles },
