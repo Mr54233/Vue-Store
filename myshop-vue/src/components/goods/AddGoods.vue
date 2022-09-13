@@ -154,6 +154,7 @@
 </template>
 
 <script>
+import _ from "lodash";
 export default {
 	data() {
 		return {
@@ -219,6 +220,21 @@ export default {
 
 			// 步骤条的步骤进度
 			activeIndex: "0",
+
+			// 动态参数列表数据
+			manyTableData: [],
+			// 静态属性列表数据
+			onlyTableData: [],
+			// 上传图片的url地址
+			uploadUrl: "http://127.0.0.1:8888/api/private/v1/upload",
+			// 图片上传的请求头
+			headerObj: {
+				Authorization: window.sessionStorage.getItem("token"),
+			},
+			// 预览图片的地址
+			previewPath: "",
+			// 控制预览窗口是否显示
+			previewVisible: false,
 		};
 	},
 	created() {
@@ -237,9 +253,175 @@ export default {
 
 			this.cateList = res.data;
 		},
-		// 改变打印
-		handleChange(value) {
-			console.log(value);
+		// 级联选择器选中项变化 触发该函数
+		handleChange() {
+			console.log(this.addForm.goods_cat);
+			if (
+				this.addForm.goods_cat.length === 1 ||
+				this.addForm.goods_cat.length === 2
+			) {
+				this.addForm.goods_cat = [];
+				return this.$message("只允许设置三级分类");
+			}
+		},
+
+		// 切换标签页时触发该函数
+		beforeTabLeave(toActiveName, oldActiveName) {
+			// 需要校验的 数组 or 字符串
+			const RulesArr = Object.keys(this.addFormRules);
+			let arrErrorInfo = [];
+
+			//  校验通过errorInfo为空，校验不通过为指定的验证规则 message
+			this.$refs.addFormRef.validateField(RulesArr, (errorInfo) => {
+				if (errorInfo) {
+					arrErrorInfo.push(errorInfo);
+				}
+			});
+
+			if (arrErrorInfo.length !== 0) {
+				this.$message.error(arrErrorInfo[0]);
+				return false;
+			} else {
+				return true;
+			}
+		},
+		// tab 被选中时触发
+		tabClicked() {
+			// 访问的是商品参数(动态参数)面板
+			if (this.activeIndex === "1") {
+				this.getManyTableData();
+				console.log(this.manyTableData);
+			} else if (this.activeIndex === "2") {
+				this.getOnlyTableData();
+			}
+		},
+
+		// 添加商品
+		add() {
+			// valid是否通过验证 obj未通过验证规则的对象
+			this.$refs.addFormRef.validate(async (valid, obj) => {
+				// 未通过表单预验证
+				if (!valid) {
+					// console.log(obj);
+					// 把未通过验证规则的对象的值提取出来 再提取值的验证规则message
+					let arr = Object.values(obj);
+					let errorInfo = obj[arr[0][0]].message;
+					return this.$message.error(errorInfo);
+				}
+
+				// 执行添加的业务逻辑
+
+				// 处理动态参数
+				this.manyTableData.forEach((item) => {
+					const newInfo = {
+						attr_id: item.attr_id,
+						attr_value: item.attr_vals.join(","),
+					};
+					this.addForm.attrs.push(newInfo);
+				});
+				// 处理静态属性
+				this.onlyTableData.forEach((item) => {
+					const newInfo = {
+						attr_id: item.attr_id,
+						attr_value: item.attr_vals,
+					};
+					this.addForm.attrs.push(newInfo);
+				});
+
+				// 处理goods_cat格式问题 使用 lodash函数库 cloneDeep(obj)  深拷贝解决冲突
+				const form = _.cloneDeep(this.addForm);
+				form.goods_cat = form.goods_cat.join(",");
+
+				console.log(form);
+
+				// 发起请求添加商品
+				// 商品的名称，必须时唯一的
+				const { data: res } = await this.$http.post("goods", form);
+
+				if (res.meta.status !== 201) {
+					return this.$message.error("添加商品失败：" + res.meta.msg);
+				}
+
+				this.$message.success("添加商品成功!");
+
+				this.$router.push("/goods");
+			});
+		},
+		// 处理图片预览效果
+		handlePreview(file) {
+			console.log(file);
+			this.previewPath = "";
+			this.previewPath =
+				"http://127.0.0.1:8888/" + file.response.data.tmp_path;
+
+			if (this.previewPath != "") {
+				this.previewVisible = true;
+			}
+		},
+		// 处理移除图片的操作
+		handleRemove(file) {
+			console.log(file);
+
+			// 1.获取将要删除的图片的临时路径
+			const filePath = file.response.data.tmp_path;
+			// 2.从pics数组中，找到这个图片对应的索引值
+			//  2.1 findIndex() 方法返回传入一个测试条件（函数）符合条件的数组第一个元素位置。 true停止 没找到返回-1
+			const i = this.addForm.pics.findIndex((x) => {
+				return x.pic === filePath;
+			});
+			// 3.调用数组的splic方法，把图片信息对象，从pics数组中移除
+			this.addForm.pics.splice(i, 1);
+		},
+		// 图片上传成功
+		uploadSuccess(response) {
+			// console.log(response);
+			// 1.拼接得到一个图片信息对象
+			const picInfo = { pic: response.data.tmp_path };
+			// 2.将图片信息push到 Pics数组中
+			this.addForm.pics.push(picInfo);
+			console.log(this.addForm);
+		},
+		// 获取动态参数数据
+		async getManyTableData() {
+			const { data: res } = await this.$http.get(
+				`categories/${this.cateId}/attributes`,
+				{ params: { sel: "many" } }
+			);
+
+			if (res.meta.status !== 200) {
+				return this.$message.error("获取动态参数失败：" + res.meta.msg);
+			}
+
+			res.data.forEach((item) => {
+				item.attr_vals =
+					item.attr_vals.length === 0
+						? []
+						: item.attr_vals.split(",");
+			});
+
+			this.manyTableData = res.data;
+		},
+		// 获取静态属性参数
+		async getOnlyTableData() {
+			const { data: res } = await this.$http.get(
+				`categories/${this.cateId}/attributes`,
+				{ params: { sel: "only" } }
+			);
+
+			if (res.meta.status !== 200) {
+				return this.$message.error("获取静态属性失败：" + res.meta.msg);
+			}
+
+			this.onlyTableData = res.data;
+		},
+	},
+	computed: {
+		cateId() {
+			if (this.addForm.goods_cat.length === 3) {
+				return this.addForm.goods_cat[2];
+			} else {
+				return null;
+			}
 		},
 	},
 };

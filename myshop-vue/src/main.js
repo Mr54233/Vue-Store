@@ -17,6 +17,13 @@ import "./assets/css/global.css";
 // 导入第三方字体图标类样式
 import "./assets/fonts/iconfont.css";
 
+// 导入富文本编辑器
+import VueQuillEditor from "vue-quill-editor";
+import "quill/dist/quill.core.css";
+import "quill/dist/quill.snow.css";
+import "quill/dist/quill.bubble.css";
+Vue.use(VueQuillEditor /* { default global options } */);
+
 Vue.config.productionTip = false;
 
 // 设置axios默认url
