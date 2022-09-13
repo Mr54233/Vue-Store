@@ -3,6 +3,8 @@ import App from "./App.vue";
 import router from "./router";
 import axios from "axios";
 import TreeTable from "vue-table-with-tree-grid";
+import echarts from "echarts";
+import store from './store'
 
 // 树形组件
 Vue.component("tree-table", TreeTable);
@@ -38,6 +40,11 @@ axios.interceptors.request.use((config) => {
 // 将axios 绑定到vue原型对象上
 Vue.prototype.$http = axios;
 
+Vue.prototype.$socket = () => {};
+
+// 把echarts挂载到 Vue原型上，以便在全局访问
+Vue.prototype.$echarts = echarts;
+
 // 定义全局时间过滤器
 Vue.filter("dateFormat", function (originVal) {
 	const dt = new Date(originVal * 1000);
@@ -54,8 +61,10 @@ Vue.filter("dateFormat", function (originVal) {
 
 	return DateStr;
 });
+Vue.config.productionTip = false;
 
 new Vue({
 	router,
+	store,
 	render: (h) => h(App),
 }).$mount("#app");

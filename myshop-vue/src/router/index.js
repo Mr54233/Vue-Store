@@ -9,7 +9,8 @@ import GoodsList from "../components/goods/List.vue";
 import AddGoods from "../components/goods/AddGoods.vue";
 import Categories from "../components/goods/Categories.vue";
 import Params from "../components/goods/Params.vue";
-import Orders from "../components/orders/order.vue"
+import Orders from "../components/orders/order.vue";
+import Dataview from "../components/DataView.vue";
 
 Vue.use(VueRouter);
 
@@ -30,6 +31,10 @@ const routes = [
 			{ path: "/params", component: Params },
 			{ path: "/orders", component: Orders },
 		],
+	},
+	{
+		path: "/reports",
+		component: Dataview,
 	},
 ];
 
